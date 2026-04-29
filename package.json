@@ -1,0 +1,13 @@
+{
+  "name": "forexlajme",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.2",
+    "fast-xml-parser": "^5.2.5",
+    "iconv-lite": "^0.7.0",
+    "luxon": "^3.7.1",
+    "node-cron": "^4.2.1"
+  }
+}
