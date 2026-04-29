@@ -1,4 +1,10 @@
 {
+  "main": "index.js",
+"scripts": {
+  "start": "node index.js",
+  "now": "cross-env RUN_NOW=1 node index.js"
+},
+
   "name": "forexlajme",
   "version": "1.0.0",
   "type": "module",
@@ -11,3 +17,4 @@
     "node-cron": "^4.2.1"
   }
 }
+
