@@ -1,0 +1,35 @@
+name: Forex Lajme Scheduler
+
+on:
+  schedule:
+    - cron: "0 22 * * 0-4"
+      timezone: "Europe/Belgrade"
+  workflow_dispatch:
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TELEGRAM_CHAT_ID2: ${{ secrets.TELEGRAM_CHAT_ID2 }}
+      TIMEZONE: Europe/Belgrade
+      TARGET_DAYS: "1"
+      RUN_NOW: "0"
+      ONE_SHOT: "1"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run telegram job
+        run: node index.js

@@ -23,6 +23,7 @@ const {
   TELEGRAM_CHAT_ID2,
   TIMEZONE = "Europe/Belgrade",
   RUN_NOW,
+  ONE_SHOT = "0",
   CRON, // opsional: lejo përdoruesin të vendosë CRON në .env
   TIME_FIX_MINUTES = "0",   // ⬅️ SHTUAR
   TARGET_DAYS = "1",
@@ -31,6 +32,7 @@ const {
 const CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID2].filter(Boolean);
 const OFFSET_MINUTES = Number.parseInt(TIME_FIX_MINUTES, 10) || 0;
 const TARGET_DAYS_AHEAD = Number.parseInt(TARGET_DAYS, 10) || 0;
+const ONE_SHOT_MODE = String(ONE_SHOT || "").trim() === "1";
 
 // ---- Guards ----
 if (!TELEGRAM_BOT_TOKEN) {
@@ -210,11 +212,17 @@ function normalizeCron(raw) {
   return null;
 }
 
-const CRON_EXPR = normalizeCron(CRON) || "0 8 * * *"; // default 08:00 çdo ditë
-console.log("⏱ po planifikoj", CRON_EXPR, "@", TIMEZONE);
-cron.schedule(CRON_EXPR, job, { timezone: TIMEZONE });
+if (ONE_SHOT_MODE) {
+  job()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+} else {
+  const CRON_EXPR = normalizeCron(CRON) || "0 8 * * *"; // default 08:00 çdo ditë
+  console.log("⏱ po planifikoj", CRON_EXPR, "@", TIMEZONE);
+  cron.schedule(CRON_EXPR, job, { timezone: TIMEZONE });
 
-// Test i menjëhershëm
-if (String(RUN_NOW || "").trim() === "1") job();
+  // Test i menjëhershëm
+  if (String(RUN_NOW || "").trim() === "1") job();
+}
 
 console.log('BUILD_TAG: 20250904-213300')
