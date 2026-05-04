@@ -25,10 +25,12 @@ const {
   RUN_NOW,
   CRON, // opsional: lejo përdoruesin të vendosë CRON në .env
   TIME_FIX_MINUTES = "0",   // ⬅️ SHTUAR
+  TARGET_DAYS = "1",
 } = process.env;
 
 const CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID2].filter(Boolean);
 const OFFSET_MINUTES = Number.parseInt(TIME_FIX_MINUTES, 10) || 0;
+const TARGET_DAYS_AHEAD = Number.parseInt(TARGET_DAYS, 10) || 0;
 
 // ---- Guards ----
 if (!TELEGRAM_BOT_TOKEN) {
@@ -60,7 +62,7 @@ const parser = new XMLParser({
 });
 
 const asArr = (x) => (Array.isArray(x) ? x : x ? [x] : []);
-const targetDate = (tz) => DateTime.now().setZone(tz).plus({ days: 1 });
+const targetDate = (tz) => DateTime.now().setZone(tz).plus({ days: TARGET_DAYS_AHEAD });
 const targetDateStr = (tz) => targetDate(tz).toFormat("MM-dd-yyyy");
 const weekdayNames = ["Hene", "Marte", "Merkure", "Enjte", "Premte", "Shtune", "Diele"];
 const targetDayName = (tz) => weekdayNames[targetDate(tz).weekday - 1];
@@ -84,13 +86,26 @@ async function fetchXml() {
   throw lastErr || new Error("S’po e shkarkoj dot FF XML.");
 }
 
-// ---- Filtrim: sot + High ----
+const getEventValue = (ev, key) => (ev?.[key]?.cdata || ev?.[key] || "").toString().trim();
+
+function isBankHoliday(ev) {
+  const title = getEventValue(ev, "title").toLowerCase();
+  const impact = getEventValue(ev, "impact").toLowerCase();
+  const holiday = getEventValue(ev, "holiday").toLowerCase();
+  return title.includes("bank holiday") || title.includes("holiday") || impact.includes("holiday") || holiday === "1";
+}
+
+function isHighImpact(ev) {
+  const impact = getEventValue(ev, "impact").toLowerCase();
+  return impact.includes("high");
+}
+
+// ---- Filtrim: dita e zgjedhur + High ose Pushim bankar ----
 function filterTodayRed(events, tz) {
   const target = targetDateStr(tz);
   return events.filter((ev) => {
-    const dateStr = (ev?.date?.cdata || ev?.date || "").toString().trim();
-    const impact = (ev?.impact?.cdata || ev?.impact || "").toString().toLowerCase();
-    return dateStr === target && impact.includes("high");
+    const dateStr = getEventValue(ev, "date");
+    return dateStr === target && (isHighImpact(ev) || isBankHoliday(ev));
   });
 }
 
@@ -103,7 +118,7 @@ function convertEtToLocal(etTimeStr, tz) {
   const hasAmPm = /am|pm/i.test(raw);
   const fmt = hasAmPm ? "h:mma" : "H:mm";
 
-  const dtEt = DateTime.fromFormat(raw.replace(/\s+/g, ""), fmt, { zone: "America/New_York" });
+  const dtEt = DateTime.fromFormat(raw.replace(/\s+/g, ""), fmt, { zone: "UTC" });
   if (!dtEt.isValid) return raw;
 
   // 1) ET → zona jote
@@ -124,17 +139,17 @@ function buildPlain(events, tz) {
   const ymd = targetDate(tz).toFormat("yyyy-MM-dd");
   const dayName = targetDayName(tz);
   {
-    if (!events.length) return `🔴 Lajmet per diten e ${dayName} (${ymd}) [${tz}]:\n- Nuk ka evente me impakt te larte.`;
+    if (!events.length) return `🔴 Lajmet per diten e ${dayName}\n📅 ${ymd}\n\nNuk ka evente me impakt te larte apo pushime bankare.`;
 
     const lines = events.map((ev) => {
-      const timeEt = (ev?.time?.cdata || ev?.time || "-").toString();
-      const timeLocal = convertEtToLocal(timeEt, tz);
-      const ccy = (ev?.country?.cdata || ev?.country || "").toString();
-      const title = (ev?.title?.cdata || ev?.title || "").toString();
-      return `${timeLocal}  ${ccy}  ${title}`;
+      const timeEt = getEventValue(ev, "time") || "-";
+      const timeLocal = /^all day$/i.test(timeEt) ? "Gjithe diten" : convertEtToLocal(timeEt, tz);
+      const ccy = getEventValue(ev, "country");
+      const title = getEventValue(ev, "title").replace(/Bank Holiday/gi, "Pushim bankar");
+      return `${timeLocal} | ${ccy} | ${title}`;
     });
 
-    return `🔴 Lajmet per diten e ${dayName} (${ymd}) [${tz}]:\n\n` + lines.join("\n");
+    return `🔴 Lajmet per diten e ${dayName}\n📅 ${ymd}\n\n` + lines.join("\n");
   }
   if (!events.length) return `🔴 Red-Flag për sot (${ymd}) [${tz}]:\n— Nuk ka evente me impakt të lartë.`;
 
