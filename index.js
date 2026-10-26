@@ -1,4 +1,4 @@
-// front/index.js — FF High (Red flag) sot → Telegram, Kosovo time, cron @ 08:00
+// ForexFactory High + pushime bankare -> Discord
 
 import axios from "axios";
 import cron from "node-cron";
@@ -9,6 +9,7 @@ import { config as envConfig } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { discordWebhookUrl, sendDiscord } from "./discord.js";
 
 // ---- .env nga rrënja ----
 const __filename = fileURLToPath(import.meta.url);
@@ -18,9 +19,7 @@ envConfig(ENV_PATH ? { path: ENV_PATH } : undefined);
 
 // ---- ENV ----
 const {
-  TELEGRAM_BOT_TOKEN,
-  TELEGRAM_CHAT_ID,
-  TELEGRAM_CHAT_ID2,
+  DISCORD_WEBHOOK_URL,
   TIMEZONE = "Europe/Belgrade",
   RUN_NOW,
   ONE_SHOT = "0",
@@ -29,24 +28,21 @@ const {
   TARGET_DAYS = "1",
 } = process.env;
 
-const CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID2].filter(Boolean);
 const OFFSET_MINUTES = Number.parseInt(TIME_FIX_MINUTES, 10) || 0;
 const TARGET_DAYS_AHEAD = Number.parseInt(TARGET_DAYS, 10) || 0;
 const ONE_SHOT_MODE = String(ONE_SHOT || "").trim() === "1";
 
 // ---- Guards ----
-if (!TELEGRAM_BOT_TOKEN) {
-  console.error("❌ Mungon TELEGRAM_BOT_TOKEN në .env (rrënja e projektit).");
-  process.exit(1);
-}
-if (CHAT_IDS.length === 0) {
-  console.error("❌ Vendos të paktën një nga TELEGRAM_CHAT_ID / TELEGRAM_CHAT_ID2 në .env.");
+try {
+  discordWebhookUrl(DISCORD_WEBHOOK_URL);
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
 
 // ---- Boot log minimal ----
 console.log(
-  `▶ boot | TZ=${TIMEZONE} | RUN_NOW=${RUN_NOW ?? "0"} | CHAT1=${TELEGRAM_CHAT_ID} | CHAT2=${TELEGRAM_CHAT_ID2 || ""}`
+  `▶ boot | TZ=${TIMEZONE} | RUN_NOW=${RUN_NOW ?? "0"} | DEST=Discord`
 );
 
 // ---- FF feeds ----
@@ -166,19 +162,6 @@ function buildPlain(events, tz) {
   return `🔴 Red-Flag për sot (${ymd}) [${tz}]:\n\n` + lines.join("\n");
 }
 
-// ---- Telegram ----
-async function sendToAll(text) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  for (const id of CHAT_IDS) {
-    try {
-      await axios.post(url, { chat_id: id, text, disable_web_page_preview: true }, { timeout: 20000 });
-      console.log(`[OK] Dërguar te ${id}`);
-    } catch (e) {
-      console.error(`[ERR] Dështoi te ${id}:`, e?.response?.data || e?.message || e);
-    }
-  }
-}
-
 // ---- Job ----
 async function job() {
   console.log("▶ JOB start", new Date().toISOString());
@@ -188,10 +171,12 @@ async function job() {
     const events = asArr(json?.weeklyevents?.event);
     const todays = filterTodayRed(events, TIMEZONE);
     const msg = buildPlain(todays, TIMEZONE);
-    await sendToAll(msg);
+    await sendDiscord(msg, DISCORD_WEBHOOK_URL);
     console.log("▶ JOB done");
+    return true;
   } catch (e) {
     console.error("❌ JOB error:", e?.message || e);
+    return false;
   }
 }
 
@@ -214,7 +199,7 @@ function normalizeCron(raw) {
 
 if (ONE_SHOT_MODE) {
   job()
-    .then(() => process.exit(0))
+    .then((success) => process.exit(success ? 0 : 1))
     .catch(() => process.exit(1));
 } else {
   const CRON_EXPR = normalizeCron(CRON) || "0 8 * * *"; // default 08:00 çdo ditë

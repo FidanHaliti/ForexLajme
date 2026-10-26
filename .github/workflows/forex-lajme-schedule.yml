@@ -11,9 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      TELEGRAM_CHAT_ID2: ${{ secrets.TELEGRAM_CHAT_ID2 }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       TIMEZONE: Europe/Belgrade
       TARGET_DAYS: "1"
       RUN_NOW: "0"
@@ -31,5 +29,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run telegram job
+      - name: Run Discord job
         run: node index.js
