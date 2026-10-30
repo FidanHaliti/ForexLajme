@@ -2,9 +2,19 @@ name: Forex Lajme Scheduler
 
 on:
   schedule:
-    - cron: "0 22 * * 0-4"
+    - cron: "0 21 * * 0"
+      timezone: "Europe/Belgrade"
+    - cron: "0 22 * * 1-4"
       timezone: "Europe/Belgrade"
   workflow_dispatch:
+    inputs:
+      news_mode:
+        description: "Lloji i raportit (weekly = java e ardhshme)"
+        type: choice
+        default: daily
+        options:
+          - daily
+          - weekly
 
 jobs:
   send-news:
@@ -13,7 +23,8 @@ jobs:
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       TIMEZONE: Europe/Belgrade
-      TARGET_DAYS: "1"
+      NEWS_MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '0 21 * * 0' && 'weekly' || 'daily') || inputs.news_mode || 'daily' }}
+      SCHEDULED_RUN: ${{ github.event_name == 'schedule' && '1' || '0' }}
       RUN_NOW: "0"
       ONE_SHOT: "1"
     steps:
@@ -28,6 +39,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test reports and Discord delivery
+        run: node --test calendar.test.js discord.test.js
 
       - name: Run Discord job
         run: node index.js
