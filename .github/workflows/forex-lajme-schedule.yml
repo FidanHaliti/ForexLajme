@@ -2,9 +2,9 @@ name: Forex Lajme Scheduler
 
 on:
   schedule:
-    - cron: "0 21 * * 0"
+    - cron: "15 21 * * 0"
       timezone: "Europe/Belgrade"
-    - cron: "0 22 * * 1-4"
+    - cron: "15 22 * * 1-4"
       timezone: "Europe/Belgrade"
   workflow_dispatch:
     inputs:
@@ -23,7 +23,7 @@ jobs:
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       TIMEZONE: Europe/Belgrade
-      NEWS_MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '0 21 * * 0' && 'weekly' || 'daily') || inputs.news_mode || 'daily' }}
+      NEWS_MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '15 21 * * 0' && 'weekly' || 'daily') || inputs.news_mode || 'daily' }}
       SCHEDULED_RUN: ${{ github.event_name == 'schedule' && '1' || '0' }}
       RUN_NOW: "0"
       ONE_SHOT: "1"

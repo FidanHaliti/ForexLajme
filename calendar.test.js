@@ -48,8 +48,8 @@ test("week dates cross year boundaries and daylight saving changes", () => {
   }
   assert.ok(cron.validate(WEEKLY_CRON));
   assert.ok(cron.validate(DAILY_CRON));
-  assert.equal(WEEKLY_CRON, "0 21 * * 0");
-  assert.equal(DAILY_CRON, "0 22 * * 1-4");
+  assert.equal(WEEKLY_CRON, "15 21 * * 0");
+  assert.equal(DAILY_CRON, "15 22 * * 1-4");
 });
 
 test("weekly report groups high impact and holidays and excludes weekends and low impact", () => {
