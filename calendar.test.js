@@ -18,7 +18,7 @@ test("Sunday weekly report covers only the coming Monday through Friday", () => 
 
 test("daily reports cover tomorrow and skip Saturday and Sunday", () => {
   for (let day = 26; day <= 29; day++) {
-    assert.equal(reportDates("daily", date(`2026-10-${day}T22:00`))[0].day, day + 1);
+    assert.equal(reportDates("daily", date(`2026-10-${day}T21:07`))[0].day, day + 1);
   }
   assert.deepEqual(reportDates("daily", date("2026-10-30T22:00")), []);
   assert.deepEqual(reportDates("daily", date("2026-10-31T22:00")), []);
@@ -49,7 +49,7 @@ test("week dates cross year boundaries and daylight saving changes", () => {
   assert.ok(cron.validate(WEEKLY_CRON));
   assert.ok(cron.validate(DAILY_CRON));
   assert.equal(WEEKLY_CRON, "7 21 * * 0");
-  assert.equal(DAILY_CRON, "7 22 * * 1-4");
+  assert.equal(DAILY_CRON, "7 21 * * 1-4");
 });
 
 test("weekly report groups high impact and holidays and excludes weekends and low impact", () => {

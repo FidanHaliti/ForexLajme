@@ -94,6 +94,6 @@ if (ONE_SHOT === "1") {
 } else {
   cron.schedule(WEEKLY_CRON, () => job("weekly"), { timezone: TIMEZONE });
   cron.schedule(DAILY_CRON, () => job("daily"), { timezone: TIMEZONE });
-  console.log(`Orari [${TIMEZONE}]: Diele 21:00 javor; Hene-Enjte 22:00 ditor.`);
+  console.log(`Orari [${TIMEZONE}]: Diele 21:07 javor; Hene-Enjte 21:07 ditor.`);
   if (RUN_NOW === "1") await job(NEWS_MODE);
 }

@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 
 export const WEEKLY_CRON = "7 21 * * 0";
-export const DAILY_CRON = "7 22 * * 1-4";
+export const DAILY_CRON = "7 21 * * 1-4";
 const weekdays = ["Hene", "Marte", "Merkure", "Enjte", "Premte"];
 const value = (event, key) => String(event?.[key]?.cdata ?? event?.[key] ?? "").trim();
 
